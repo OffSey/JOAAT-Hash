@@ -15,6 +15,10 @@ A simple, clean, single-file web tool to convert any string to its **JOAAT hash*
 2. Open `index.html` in any modern browser
 3. Type your string and get the hashes instantly
 
+or:
+
+1. Go to: https://offsey.github.io/JOAAT-Hash/
+
 ## Preview
 
 | Format | Example (`adder`) |
