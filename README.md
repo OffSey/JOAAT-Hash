@@ -33,4 +33,6 @@ or:
 
 ## Credits
 
-By **OffSey** for [xionshield.eu](https://xionshield.eu)
+Created by **OffSey** for [xionshield.eu](https://xionshield.eu).
+The tool is fully open-source and available for everyone to use, modify, and integrate into their own projects.
+
