@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>JOAAT Hash Converter – FiveM</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
 
     body {
       min-height: 100vh;
@@ -65,6 +65,61 @@
       to   { transform: translateY(30px) scale(1.08); }
     }
 
+    @keyframes gridPulse {
+      0%, 100% { opacity: 0.03; }
+      50% { opacity: 0.07; }
+    }
+
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(203,160,82,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(203,160,82,0.05) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridPulse 6s ease-in-out infinite;
+    }
+
+    .cursor-glow {
+      position: fixed;
+      width: 380px;
+      height: 380px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(203,160,82,0.10) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s;
+    }
+
+    .cursor-dot {
+      position: fixed;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(203,160,82,0.95);
+      pointer-events: none;
+      z-index: 100;
+      transform: translate(-50%, -50%);
+      transition: width 0.2s, height 0.2s, background 0.2s;
+      box-shadow: 0 0 10px rgba(203,160,82,0.8), 0 0 20px rgba(203,160,82,0.3);
+    }
+
+    .cursor-ring {
+      position: fixed;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(203,160,82,0.55);
+      pointer-events: none;
+      z-index: 100;
+      transform: translate(-50%, -50%);
+      transition: width 0.2s, height 0.2s, border-color 0.2s, border-width 0.2s;
+    }
+
+
     .card {
       background: rgba(22, 27, 34, 0.85);
       border: 1px solid #2a2a2a;
@@ -85,25 +140,6 @@
       margin-bottom: 28px;
     }
 
-    .logo-wrap {
-      background: #0d1117;
-      border: 1px solid #2a2a2a;
-      border-radius: 10px;
-      width: 44px;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-
-    .logo-wrap img {
-      width: 32px;
-      height: 32px;
-      object-fit: contain;
-    }
-
     .header-text h1 {
       font-size: 1.2rem;
       font-weight: 700;
@@ -114,37 +150,6 @@
       font-size: 0.8rem;
       color: #8b949e;
       margin-top: 2px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 28px;
-      padding-bottom: 22px;
-      border-bottom: 1px solid #21262d;
-    }
-
-    .brand img {
-      width: 28px;
-      height: 28px;
-      object-fit: contain;
-      flex-shrink: 0;
-    }
-
-    .brand-name {
-      font-size: 1.15rem;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-    }
-
-    .brand-name .xion { color: #cba052; }
-    .brand-name .shield { color: #e6edf3; }
-
-    .brand-sub {
-      font-size: 0.75rem;
-      color: #6e7681;
-      margin-top: 1px;
     }
 
     label {
@@ -237,7 +242,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
+      cursor: none;
       transition: background 0.15s, border-color 0.15s, color 0.15s;
       flex-shrink: 0;
       color: #8b949e;
@@ -260,7 +265,7 @@
       color: #8b949e;
       font-size: 0.88rem;
       font-family: 'Segoe UI', sans-serif;
-      cursor: pointer;
+      cursor: none;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -312,17 +317,34 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+
+    .ripple {
+      position: fixed;
+      border-radius: 50%;
+      border: 1.5px solid rgba(203,160,82,0.6);
+      pointer-events: none;
+      z-index: 99;
+      transform: translate(-50%, -50%) scale(0);
+      animation: rippleOut 0.6s ease-out forwards;
+    }
+
+    @keyframes rippleOut {
+      to { transform: translate(-50%, -50%) scale(1); opacity: 0; width: 80px; height: 80px; }
+    }
   </style>
 </head>
 <body>
 
   <canvas id="bg"></canvas>
+  <div class="bg-grid"></div>
   <div class="glow-orb one"></div>
   <div class="glow-orb two"></div>
   <div class="glow-orb three"></div>
+  <div class="cursor-glow" id="cursorGlow"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
 
   <div class="card">
-
     <div class="header">
       <div class="header-text">
         <h1>JOAAT Hash Converter</h1>
@@ -334,9 +356,7 @@
     <input type="text" id="inputStr" placeholder="enter_string_here" autocomplete="off" spellcheck="false" />
     <p class="hint">Lowercased before hashing, as FiveM does internally.</p>
 
-    <div class="section-title">
-      Hashes
-    </div>
+    <div class="section-title">Hashes</div>
 
     <div class="results">
       <div class="result-row">
@@ -385,13 +405,24 @@
     </a>
 
     <div class="footer">
-      By <strong>OffSey</strong> for <img src="https://cdn.xionhosting.de/uploads/xionsecurelogo.png" alt="XionShield" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:3px;" /><a href="https://xionshield.eu" target="_blank">xionshield.eu</a>
+      By <strong>OffSey</strong> for
+      <img src="https://cdn.xionhosting.de/uploads/xionsecurelogo.png" alt="XionShield" style="width:14px;height:14px;object-fit:contain;vertical-align:middle;margin-right:3px;" />
+      <a href="https://xionshield.eu" target="_blank">xionshield.eu</a>
     </div>
   </div>
 
   <div class="toast" id="toast">Copied to clipboard!</div>
 
   <script>
+   const mouse        = { x: null, y: null };
+    const cursorGlow   = document.getElementById('cursorGlow');
+    const cursorDot    = document.getElementById('cursorDot');
+    const cursorRing   = document.getElementById('cursorRing');
+
+    let dotX = 0, dotY = 0;
+    let ring1X = 0, ring1Y = 0;
+    let ring2X = 0, ring2Y = 0;
+
     const canvas = document.getElementById('bg');
     const ctx = canvas.getContext('2d');
     let W, H, particles = [];
@@ -399,37 +430,55 @@
     function resize() {
       W = canvas.width = window.innerWidth;
       H = canvas.height = window.innerHeight;
+      initParticles();
     }
 
     function randomBetween(a, b) { return a + Math.random() * (b - a); }
 
     function initParticles() {
       particles = [];
-      const count = Math.floor((W * H) / 14000);
+      const count = Math.floor((W * H) / 9000);
       for (let i = 0; i < count; i++) {
         particles.push({
           x: Math.random() * W,
           y: Math.random() * H,
-          r: randomBetween(0.5, 2),
-          dx: randomBetween(-0.15, 0.15),
-          dy: randomBetween(-0.25, -0.05),
-          alpha: randomBetween(0.2, 0.7),
+          r: randomBetween(0.4, 2.2),
+          dx: randomBetween(-0.18, 0.18),
+          dy: randomBetween(-0.28, -0.04),
+          alpha: randomBetween(0.15, 0.75),
+          wobble: Math.random() * Math.PI * 2,
+          wobbleSpeed: randomBetween(0.008, 0.022),
+          wobbleAmp: randomBetween(0.3, 1.1),
         });
       }
     }
 
     function drawParticles() {
       ctx.clearRect(0, 0, W, H);
+
       for (const p of particles) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(203, 160, 82, ${p.alpha})`;
-        ctx.fill();
-        p.x += p.dx;
+        p.wobble += p.wobbleSpeed;
+        p.x += p.dx + Math.sin(p.wobble) * p.wobbleAmp * 0.4;
         p.y += p.dy;
+
+        if (mouse.x !== null) {
+          const mx = mouse.x - p.x;
+          const my = mouse.y - p.y;
+          const md = Math.sqrt(mx * mx + my * my);
+          if (md < 180) {
+            p.x += mx / md * 0.18 * (1 - md / 180);
+            p.y += my / md * 0.18 * (1 - md / 180);
+          }
+        }
+
         if (p.y < -5) { p.y = H + 5; p.x = Math.random() * W; }
         if (p.x < -5) p.x = W + 5;
         if (p.x > W + 5) p.x = -5;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(203,160,82,${p.alpha})`;
+        ctx.fill();
       }
 
       for (let i = 0; i < particles.length; i++) {
@@ -440,8 +489,20 @@
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
-            ctx.strokeStyle = `rgba(203,160,82,${0.1 * (1 - dist / 100)})`;
+            ctx.strokeStyle = `rgba(203,160,82,${0.10 * (1 - dist / 100)})`;
             ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+
+        if (mouse.x !== null) {
+          const dist = Math.hypot(particles[i].x - mouse.x, particles[i].y - mouse.y);
+          if (dist < 160) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(mouse.x, mouse.y);
+            ctx.strokeStyle = `rgba(203,160,82,${0.22 * (1 - dist / 160)})`;
+            ctx.lineWidth = 0.6;
             ctx.stroke();
           }
         }
@@ -450,53 +511,104 @@
       requestAnimationFrame(drawParticles);
     }
 
-    window.addEventListener('resize', () => { resize(); initParticles(); });
+    window.addEventListener('resize', resize);
     resize();
-    initParticles();
     drawParticles();
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      cursorGlow.style.left = e.clientX + 'px';
+      cursorGlow.style.top  = e.clientY + 'px';
+    });
+
+    function animateCursor() {
+      if (mouse.x !== null) {
+        dotX += (mouse.x - dotX) * 0.55;
+        dotY += (mouse.y - dotY) * 0.55;
+        cursorDot.style.left = dotX + 'px';
+        cursorDot.style.top  = dotY + 'px';
+
+        ring1X += (mouse.x - ring1X) * 0.18;
+        ring1Y += (mouse.y - ring1Y) * 0.18;
+        cursorRing.style.left = ring1X + 'px';
+        cursorRing.style.top  = ring1Y + 'px';
+
+        ring2X += (mouse.x - ring2X) * 0.09;
+        ring2Y += (mouse.y - ring2Y) * 0.09;
+      }
+      requestAnimationFrame(animateCursor);
+    }
+    animateCursor();
+
+    document.querySelectorAll('button, a, input').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        cursorRing.style.width        = '44px';
+        cursorRing.style.height       = '44px';
+        cursorRing.style.borderColor  = 'rgba(203,160,82,0.9)';
+        cursorRing.style.borderWidth  = '2px';
+        cursorDot.style.width         = '4px';
+        cursorDot.style.height        = '4px';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursorRing.style.width        = '30px';
+        cursorRing.style.height       = '30px';
+        cursorRing.style.borderColor  = 'rgba(203,160,82,0.55)';
+        cursorRing.style.borderWidth  = '1.5px';
+        cursorDot.style.width         = '6px';
+        cursorDot.style.height        = '6px';
+      });
+    });
+
+    window.addEventListener('click', (e) => {
+      const r = document.createElement('div');
+      r.className = 'ripple';
+      r.style.left   = e.clientX + 'px';
+      r.style.top    = e.clientY + 'px';
+      r.style.width  = '10px';
+      r.style.height = '10px';
+      document.body.appendChild(r);
+      setTimeout(() => r.remove(), 650);
+    });
 
     function joaat(str) {
       str = str.toLowerCase();
-      let hash = 0;
+      let h = 0;
       for (let i = 0; i < str.length; i++) {
-        hash += str.charCodeAt(i);
-        hash += hash << 10;
-        hash ^= hash >>> 6;
-        hash = hash >>> 0;
+        h += str.charCodeAt(i);
+        h += h << 10;
+        h ^= h >>> 6;
       }
-      hash += hash << 3;
-      hash ^= hash >>> 11;
-      hash += hash << 15;
-      hash = hash >>> 0;
-      return hash;
+      h += h << 3;
+      h ^= h >>> 11;
+      h += h << 15;
+      return h >>> 0;
     }
 
-    function toSigned(u) {
-      return u >>> 0 > 2147483647 ? u - 4294967296 : u;
-    }
-
-    function update() {
-      const val = document.getElementById('inputStr').value;
+    const input = document.getElementById('inputStr');
+    input.addEventListener('input', () => {
+      const val = input.value;
+      if (!val) {
+        document.getElementById('signed').textContent   = '0';
+        document.getElementById('unsigned').textContent = '0';
+        document.getElementById('hex').textContent      = '0x0';
+        return;
+      }
       const u = joaat(val);
+      const s = u | 0;
+      document.getElementById('signed').textContent   = s;
       document.getElementById('unsigned').textContent = u;
-      document.getElementById('signed').textContent = toSigned(u);
-      document.getElementById('hex').textContent = '0x' + u.toString(16).toUpperCase();
-    }
-
-    document.getElementById('inputStr').addEventListener('input', update);
+      document.getElementById('hex').textContent      = '0x' + u.toString(16).toUpperCase();
+    });
 
     function copyValue(id) {
-      const text = document.getElementById(id).textContent;
-      navigator.clipboard.writeText(text).then(() => showToast());
+      const val = document.getElementById(id).textContent;
+      navigator.clipboard.writeText(val).then(() => {
+        const t = document.getElementById('toast');
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 1800);
+      });
     }
-
-    function showToast() {
-      const t = document.getElementById('toast');
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 1800);
-    }
-
-    update();
   </script>
 </body>
 </html>
